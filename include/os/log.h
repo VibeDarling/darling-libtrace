@@ -48,6 +48,15 @@ bool os_log_type_enabled(os_log_t log, os_log_type_t type);
 OS_EXPORT OS_NOT_TAIL_CALLED
 void _os_log_impl(void* dso, os_log_t log, os_log_type_t type, const char* format, uint8_t* buffer, uint32_t size);
 
+OS_EXPORT OS_NOT_TAIL_CALLED
+void _os_log_debug_impl(void* dso, os_log_t log, os_log_type_t type, const char* format, uint8_t* buffer, uint32_t size);
+
+OS_EXPORT OS_NOT_TAIL_CALLED
+void _os_log_error_impl(void* dso, os_log_t log, os_log_type_t type, const char* format, uint8_t* buffer, uint32_t size);
+
+OS_EXPORT OS_NOT_TAIL_CALLED
+void _os_log_fault_impl(void* dso, os_log_t log, os_log_type_t type, const char* format, uint8_t* buffer, uint32_t size);
+
 OS_EXPORT DEPRECATED_ATTRIBUTE
 void _os_log_internal(void *dso, os_log_t log, os_log_type_t type, const char *message, ...);
 
@@ -57,19 +66,22 @@ bool os_log_is_debug_enabled(os_log_t log);
 #define os_log_info_enabled(log)  os_log_type_enabled(log, OS_LOG_TYPE_INFO)
 #define os_log_debug_enabled(log) os_log_type_enabled(log, OS_LOG_TYPE_DEBUG)
 
-#define os_log_with_type(log, type, format, ...) ({ \
+#define os_log_with_type_impl(impl, log, type, format, ...) ({ \
 			os_log_t _log_tmp = (log); \
 			os_log_type_t _type_tmp = (type); \
 			if (os_log_type_enabled(_log_tmp, _type_tmp)) { \
-				OS_LOG_CALL_WITH_FORMAT(_os_log_impl, (&__dso_handle, _log_tmp, _type_tmp), format, ##__VA_ARGS__); \
+				OS_LOG_CALL_WITH_FORMAT(impl, (&__dso_handle, _log_tmp, _type_tmp), format, ##__VA_ARGS__); \
 			} \
 	})
 
+#define os_log_with_type(log, type, format, ...) \
+	os_log_with_type_impl(_os_log_impl, log, type, format, ##__VA_ARGS__)
+
 #define os_log(log, format, ...)       os_log_with_type(log, OS_LOG_TYPE_DEFAULT, format, ##__VA_ARGS__)
 #define os_log_info(log, format, ...)  os_log_with_type(log, OS_LOG_TYPE_INFO, format, ##__VA_ARGS__)
-#define os_log_debug(log, format, ...) os_log_with_type(log, OS_LOG_TYPE_DEBUG, format, ##__VA_ARGS__)
-#define os_log_error(log, format, ...) os_log_with_type(log, OS_LOG_TYPE_ERROR, format, ##__VA_ARGS__)
-#define os_log_fault(log, format, ...) os_log_with_type(log, OS_LOG_TYPE_FAULT, format, ##__VA_ARGS__)
+#define os_log_debug(log, format, ...) os_log_with_type_impl(_os_log_debug_impl, log, OS_LOG_TYPE_DEBUG, format, ##__VA_ARGS__)
+#define os_log_error(log, format, ...) os_log_with_type_impl(_os_log_error_impl, log, OS_LOG_TYPE_ERROR, format, ##__VA_ARGS__)
+#define os_log_fault(log, format, ...) os_log_with_type_impl(_os_log_fault_impl, log, OS_LOG_TYPE_FAULT, format, ##__VA_ARGS__)
 
 __END_DECLS
 

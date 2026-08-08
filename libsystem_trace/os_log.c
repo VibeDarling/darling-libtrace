@@ -140,6 +140,25 @@ _os_log_impl(void *dso, os_log_t log, os_log_type_t type, const char *format, ui
 	free((void *)buffer_hex);
 }
 
+// Level-specialized entry points (macOS 10.14+). They take the same arguments as
+// _os_log_impl(); the only reason they exist upstream is so that logd can tell
+// the call sites apart cheaply, so forwarding is behaviourally correct.
+
+void
+_os_log_debug_impl(void *dso, os_log_t log, os_log_type_t type, const char *format, uint8_t *buf, uint32_t size) {
+	_os_log_impl(dso, log, type, format, buf, size);
+}
+
+void
+_os_log_error_impl(void *dso, os_log_t log, os_log_type_t type, const char *format, uint8_t *buf, uint32_t size) {
+	_os_log_impl(dso, log, type, format, buf, size);
+}
+
+void
+_os_log_fault_impl(void *dso, os_log_t log, os_log_type_t type, const char *format, uint8_t *buf, uint32_t size) {
+	_os_log_impl(dso, log, type, format, buf, size);
+}
+
 #pragma mark Legacy Functions
 
 os_log_t _os_log_create(void *dso __unused, const char *subsystem, const char *category) {
