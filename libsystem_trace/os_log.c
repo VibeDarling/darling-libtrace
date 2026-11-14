@@ -28,6 +28,9 @@
 #include "os_log_s.h"
 #include "libtrace_assert.h"
 #include <asl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <os/log.h>
 #import <os/object_private.h>
 
@@ -89,6 +92,20 @@ char *os_log_decode_buffer(const char *formatString, uint8_t *buffer, uint32_t b
 __XNU_PRIVATE_EXTERN
 const char *os_log_buffer_to_hex_string(const uint8_t *buffer, uint32_t buffer_size);
 
+// DARLING_OS_LOG_STDERR=1 echoes each decoded message to stderr, because the logging daemon is disabled and
+// nothing else shows os_log output. The text is printed as the app logged it; see README.md before sharing it.
+static bool os_log_stderr_enabled(void) {
+	// 0 = not read yet, 1 = off, 2 = on. Racing first calls read the same environment, so a repeated store is harmless.
+	static int state;
+	int current = __atomic_load_n(&state, __ATOMIC_RELAXED);
+	if (current == 0) {
+		const char *value = getenv("DARLING_OS_LOG_STDERR");
+		current = (value != NULL && strcmp(value, "1") == 0) ? 2 : 1;
+		__atomic_store_n(&state, current, __ATOMIC_RELAXED);
+	}
+	return current == 2;
+}
+
 void
 _os_log_impl(void *dso, os_log_t log, os_log_type_t type, const char *format, uint8_t *buf, uint32_t size) {
 	libtrace_precondition(log != NULL, "os_log_t cannot be NULL");
@@ -134,6 +151,8 @@ _os_log_impl(void *dso, os_log_t log, os_log_type_t type, const char *format, ui
 	}
 
 	char *decodedBuffer = os_log_decode_buffer(format, buf, size);
+	if (os_log_stderr_enabled())
+		fprintf(stderr, "os_log[%s/%s] type=%d: %s\n", subsystem, category, (int)type, decodedBuffer ? decodedBuffer : "(undecodable)");
 	asl_log(get_client(), message, level, "%s", decodedBuffer);
 	asl_release(message);
 	free(decodedBuffer);
