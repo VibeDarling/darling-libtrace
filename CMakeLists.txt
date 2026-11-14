@@ -36,3 +36,5 @@ install(FILES libsystem_trace/org.puredarwin.os_log.asl DESTINATION libexec/darl
 # Host-only decoder test: runs unpack_buffer.m against stub Objective-C headers, no Darling build needed.
 enable_testing()
 add_test(NAME libtrace_host_decode COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/host/run.sh)
+# Host-only DARLING_OS_LOG_STDERR test: runs os_log.c against stub headers, no Darling build needed.
+add_test(NAME libtrace_host_os_log_stderr COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/tests/host/run-stderr.sh)
